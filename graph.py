@@ -7,16 +7,16 @@ class GraphModel:
     """
     Represents the network graph of zones and connections.
     """
-    def __init__(self):
+    def __init__(self) -> None:
         self.zones: Dict[str, Zone] = {}
         self.connections: Dict[frozenset, Connection] = {}
 
-    def add_zone(self, zone: Zone):
+    def add_zone(self, zone: Zone) -> None:
         if zone.name in self.zones:
             raise ValueError(f"Duplicate zone detected: {zone.name}")
         self.zones[zone.name] = zone
 
-    def add_connection(self, con: Connection):
+    def add_connection(self, con: Connection) -> None:
         k = frozenset([con.zone1, con.zone2])
         if k in self.connections:
             raise ValueError(f"Duplicate connection detected:"
