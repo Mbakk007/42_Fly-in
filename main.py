@@ -1,5 +1,6 @@
 import sys
 from parser import parse_input_file, ParseError
+from simulation import Simulation
 
 
 def main() -> None:
@@ -17,16 +18,15 @@ def main() -> None:
     print(f"Loaded map: {map_path}")
     print(f"Drones: {nb_drones}, Start: {start}, End: {end}")
     print("Initial network state:")
-    i = 1
+
     for z in graph.zones:
         prefix = "[D" if z == start else "["
         suffix = "]" if z == end else "] "
-        print(f"Turn {i}: {prefix}{z}{suffix}", end="  ")
-        i += 1
+        print(f"{prefix}{z}{suffix}", end="  ")
     print()
 
-    # sim = Simulation(nb_drones, graph, start, end)
-    # sim.run()
+    sim = Simulation(nb_drones, graph, start, end)
+    sim.run()
 
 
 if __name__ == "__main__":

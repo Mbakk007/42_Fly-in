@@ -1,6 +1,7 @@
 from typing import Tuple
 from zone import Zone
 from graph import GraphModel
+from connection import Connection
 
 
 class ParseError(Exception):
@@ -163,10 +164,12 @@ def parse_input_file(file_path: str) -> Tuple[int, GraphModel, str, str]:
 
             if line.startswith("connection:"):
                 rest = line.split(":", 1)[1].strip()
-                parts = rest.split()
+                k = rest.split("[", 1)
+                data_part = k[0].strip()
+                meta_part = f"[{k[1]}" if len(k) == 2 else ""
+                parts = data_part.split("-")
                 if len(parts) != 2:
-                    raise ParseError(f"Line {line_num}: Invalid "
-                                     f"connection format")
+                    raise ParseError(f"Line {line_num}: Invalid connection")
                 src, dst = parts
                 if src == dst:
                     raise ParseError(f"Line {line_num}: Connection from a zone"
@@ -179,7 +182,15 @@ def parse_input_file(file_path: str) -> Tuple[int, GraphModel, str, str]:
                     raise ParseError(f"Line {line_num}: Duplicate connection "
                                      f"between '{src}' and '{dst}'")
                 seen_connections.add(connection)
-                graph.add_connection(src, dst)
+                metadata = {}
+                if meta_part:
+                    metadata = parse_metadata(meta_part, line_num)
+                max_link_capacity = int(metadata.get("max_link_capacity", 1))
+                if max_link_capacity <= 0:
+                    raise ParseError(f"Line {line_num}: max_link_capacity must"
+                                     f" be a positive integer")
+                con = Connection(src, dst, max_link_capacity)
+                graph.add_connection(con)
 
     if nb_drones is None:
         raise ParseError("Missing 'nb_drones' line.")
