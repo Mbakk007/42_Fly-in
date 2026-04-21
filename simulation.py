@@ -40,21 +40,6 @@ class Simulation:
             return f"{COLOR_MAP[color.lower()]}{zone_name}{RESET}"
         return zone_name
 
-    def is_reachable(self) -> bool:
-        """Check if the end hub is reachable from the start hub."""
-        visited = set()
-        queue = [self.start]
-        while queue:
-            zone = queue.pop(0)
-            if zone == self.end:
-                return True
-            if zone not in visited:
-                visited.add(zone)
-            for n in self.graph.zones[zone].neighbors:
-                if n not in visited:
-                    queue.append(n)
-        return False
-
     def find_path(self, start: str, end: str) -> list[str]:
         """Find path from start to end using BFS."""
         queue = [(start, [start])]
@@ -67,11 +52,10 @@ class Simulation:
                 if neighbor not in visited:
                     visited.add(neighbor)
                     queue.append((neighbor, path + [neighbor]))
+        raise ValueError(f"End hub '{self.end}' is not reachable from "
+                         f"start hub '{self.start}'.")
 
     def run(self):
-        if not self.is_reachable():
-            raise ValueError(f"End hub '{self.end}' is not reachable from "
-                             f"start hub '{self.start}'.")
 
         # Output path planning
         shortest_path = self.find_path(self.start, self.end)

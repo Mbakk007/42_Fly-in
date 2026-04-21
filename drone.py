@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple, Optional
 
 
 class Drone:
@@ -9,6 +9,7 @@ class Drone:
         self.drone_id: int = drone_id
         self.current_zone: str = current_zone
         self.path: List[str] = []
+        self.in_flight: Optional[Tuple[str, str, int]] = None
         self.state: str = "waiting"
 
     def __repr__(self) -> str:
