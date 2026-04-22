@@ -1,15 +1,17 @@
 .PHONY: install run debug lint lint-strict clean
+PYTHON := venv/bin/python
 
-MAP ?= map.txt
+MAP ?= maps/easy/01_linear_path.txt
 
 install:
-	python3 -m venv venv && . venv/bin/activate && pip install -r requirements.txt
+	python3 -m venv venv
+	pip install flake8 mypy
 
 run:
-	python3 main.py $(MAP)
+	$(PYTHON) main.py $(MAP)
 
 debug:
-	python3 -m pdb main.py $(MAP)
+	$(PYTHON) -m pdb main.py $(MAP)
 
 lint:
 	flake8 .

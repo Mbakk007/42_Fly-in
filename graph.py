@@ -9,7 +9,7 @@ class GraphModel:
     """
     def __init__(self) -> None:
         self.zones: Dict[str, Zone] = {}
-        self.connections: Dict[frozenset, Connection] = {}
+        self.connections: Dict[frozenset[str], Connection] = {}
 
     def add_zone(self, zone: Zone) -> None:
         if zone.name in self.zones:

@@ -12,7 +12,7 @@ class ParseError(Exception):
 ZONE_TYPES = {"normal", "blocked", "restricted", "priority"}
 
 
-def parse_metadata(metadata: str, line_num: int) -> dict:
+def parse_metadata(metadata: str, line_num: int) -> dict[str, str]:
     """
     Parse metadata enclosed in [] on lines, e.g. [zone=restricted color=red]
     """

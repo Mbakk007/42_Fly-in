@@ -34,7 +34,8 @@ class Simulation:
         self.end = end
         self.drones = [Drone(i + 1, start) for i in range(nb_drones)]
 
-    def colorize_zone(self, zone_name):
+    def colorize_zone(self, zone_name: str) -> str:
+        """Apply color to zone name if defined in map."""
         color = self.graph.zones[zone_name].color
         if color and color.lower() in COLOR_MAP:
             return f"{COLOR_MAP[color.lower()]}{zone_name}{RESET}"
@@ -49,7 +50,8 @@ class Simulation:
             if current == end:
                 return path
             neighbors = list(self.graph.zones[current].neighbors)
-            neighbors.sort(key=lambda n: self.graph.zones[n].zone_type != "priority")
+            neighbors.sort(key=lambda n:
+                           self.graph.zones[n].zone_type != "priority")
             for neighbor in neighbors:
                 zone_type = self.graph.zones[neighbor].zone_type
                 if neighbor not in visited and zone_type != "blocked":
@@ -58,8 +60,9 @@ class Simulation:
         raise ValueError(f"End hub '{self.end}' is not reachable from "
                          f"start hub '{self.start}'.")
 
-    def run(self):
-
+    def run(self) -> None:
+        """Run the simulation, moving drones from start to end
+                while respecting all constraints."""
         shortest_path = self.find_path(self.start, self.end)
         path_cost = 0
         for i in range(1, len(shortest_path)):
@@ -76,7 +79,7 @@ class Simulation:
         for drone in drones:
             drone.in_flight = None
 
-        delivered = set()
+        delivered: set[int] = set()
         turn = 0
         total_moves = 0
 
@@ -102,7 +105,8 @@ class Simulation:
                         drone.current_zone = to_zone
                         drone.in_flight = None
                         moves_this_turn.append(
-                            (drone.drone_id, f"D{drone.drone_id}-{self.colorize_zone(to_zone)}"))
+                            (drone.drone_id, f"D{drone.drone_id}-"
+                                             f"{self.colorize_zone(to_zone)}"))
                         just_landed.add(drone.drone_id)
                         total_moves += 1
                         if to_zone == self.end:
@@ -111,9 +115,9 @@ class Simulation:
                         drone.in_flight = (from_zone, to_zone, steps_left)
 
             # Step 3: PLANNING: mark planned moves this turn
-            planned_moves = []  # (drone, from_zone, to_zone, is_restricted)
-            planned_links = {}  # (from, to): [drone, ...]
-            planned_arrivals = {}  # to_zone: [drone, ...]
+            planned_moves: list[tuple[Drone, str, str, bool]] = []
+            planned_links: dict[tuple[str, str], list[Drone]] = {}
+            planned_arrivals: dict[str, list[Drone]] = {}
             for drone in drones:
                 if (
                     drone.drone_id in delivered
@@ -126,8 +130,10 @@ class Simulation:
                 if len(path) > 1:
                     from_zone = path[0]
                     to_zone = path[1]
-                    is_restricted = self.graph.zones[to_zone].zone_type == "restricted"
-                    planned_moves.append((drone, from_zone, to_zone, is_restricted))
+                    is_restricted = (self.graph.zones[to_zone].zone_type
+                                     == "restricted")
+                    planned_moves.append((drone, from_zone,
+                                          to_zone, is_restricted))
                     link = (from_zone, to_zone)
                     planned_links.setdefault(link, []).append(drone)
                     planned_arrivals.setdefault(to_zone, []).append(drone)
@@ -145,9 +151,9 @@ class Simulation:
                 zone_leaving[from_zone] += 1
 
             # Step 5: Enforce capacities, select allowed ones only
-            allowed_moves = set()
-            connection_usage = {}
-            zone_incoming = {}
+            allowed_moves: set[Drone] = set()
+            connection_usage: dict[tuple[str, str], int] = {}
+            zone_incoming: dict[str, int] = {}
             for drone, from_zone, to_zone, is_restricted in planned_moves:
                 link = (from_zone, to_zone)
                 # Get max_link_capacity between from_zone and to_zone
@@ -157,11 +163,13 @@ class Simulation:
                 if connection_usage[link] >= max_link:
                     continue  # skip, link is full
 
-                max_drones = getattr(self.graph.zones[to_zone], "max_drones", 1)
+                max_drones = getattr(self.graph.zones[to_zone],
+                                     "max_drones", 1)
                 zone_incoming.setdefault(to_zone, 0)
                 # Only enforce max_drones for zones other than start/end
                 if to_zone != self.start and to_zone != self.end:
-                    projected = (zone_occupancy[to_zone] + zone_incoming[to_zone]
+                    projected = (zone_occupancy[to_zone]
+                                 + zone_incoming[to_zone]
                                  - zone_leaving.get(to_zone, 0))
                     if projected >= max_drones:
                         continue  # skip, zone is full (with pipelining!)
@@ -178,12 +186,14 @@ class Simulation:
                     drone.in_flight = (from_zone, to_zone, 1)
                     moves_this_turn.append(
                         (drone.drone_id,
-                         f"D{drone.drone_id}-{self.colorize_zone(from_zone)}-{self.colorize_zone(to_zone)}"))
+                         f"D{drone.drone_id}-{self.colorize_zone(from_zone)}-"
+                         f"{self.colorize_zone(to_zone)}"))
                     total_moves += 1
                 else:
                     drone.current_zone = to_zone
                     moves_this_turn.append(
-                        (drone.drone_id, f"D{drone.drone_id}-{self.colorize_zone(to_zone)}"))
+                        (drone.drone_id, f"D{drone.drone_id}-"
+                         f"{self.colorize_zone(to_zone)}"))
                     total_moves += 1
                     if to_zone == self.end:
                         delivered.add(drone.drone_id)
