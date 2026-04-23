@@ -17,7 +17,6 @@ COLOR_MAP = {
     "darkred": "\033[38;5;52m",
     "violet": "\033[38;5;177m",
     "crimson": "\033[38;5;160m",
-    "rainbow": "\033[38;5;214m",
 }
 RESET = "\033[0m"
 
@@ -37,6 +36,12 @@ class Simulation:
     def colorize_zone(self, zone_name: str) -> str:
         """Apply color to zone name if defined in map."""
         color = self.graph.zones[zone_name].color
+        if color and color.lower() == "rainbow":
+            colors = list(COLOR_MAP.values())
+            colored = "".join(
+                colors[i % len(colors)] + c for i, c in enumerate(zone_name)
+            ) + RESET
+            return colored
         if color and color.lower() in COLOR_MAP:
             return f"{COLOR_MAP[color.lower()]}{zone_name}{RESET}"
         return zone_name
@@ -135,17 +140,20 @@ class Simulation:
                     planned_moves.append((drone, from_zone,
                                           to_zone, is_restricted))
                     link = (from_zone, to_zone)
-                    planned_links.setdefault(link, []).append(drone)
-                    planned_arrivals.setdefault(to_zone, []).append(drone)
+                    if link not in planned_links:
+                        planned_links[link] = []
+                    planned_links[link].append(drone)
+                    if to_zone not in planned_arrivals:
+                        planned_arrivals[to_zone] = []
+                    planned_arrivals[to_zone].append(drone)
 
-            # Step 4: Sort requests (lowest drone_id first for fairness)
+            # Step 4: Sort requests (lowest drone_id first)
             for key in planned_links:
                 planned_links[key].sort(key=lambda d: d.drone_id)
             for zone in planned_arrivals:
                 planned_arrivals[zone].sort(key=lambda d: d.drone_id)
 
-            # ----------- PIPELINING LOGIC -------------- #
-            # Count how many leave each zone (for pipelining)
+            # Count how many leave each zone
             zone_leaving = {z: 0 for z in self.graph.zones}
             for drone, from_zone, to_zone, is_restricted in planned_moves:
                 zone_leaving[from_zone] += 1
@@ -161,7 +169,7 @@ class Simulation:
                 max_link = getattr(conn, "max_link_capacity", 1)
                 connection_usage.setdefault(link, 0)
                 if connection_usage[link] >= max_link:
-                    continue  # skip, link is full
+                    continue
 
                 max_drones = getattr(self.graph.zones[to_zone],
                                      "max_drones", 1)
@@ -172,16 +180,16 @@ class Simulation:
                                  + zone_incoming[to_zone]
                                  - zone_leaving.get(to_zone, 0))
                     if projected >= max_drones:
-                        continue  # skip, zone is full (with pipelining!)
+                        continue
 
                 allowed_moves.add(drone)
                 connection_usage[link] += 1
                 zone_incoming[to_zone] += 1
 
-            # Step 6: Actually perform allowed moves
+            # Step 6: Perform allowed moves
             for drone, from_zone, to_zone, is_restricted in planned_moves:
                 if drone not in allowed_moves:
-                    continue  # Drone must wait this turn!
+                    continue
                 if is_restricted:
                     drone.in_flight = (from_zone, to_zone, 1)
                     moves_this_turn.append(
