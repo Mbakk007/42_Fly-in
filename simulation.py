@@ -98,6 +98,10 @@ class Simulation:
             for drone in drones:
                 if drone.drone_id not in delivered and drone.in_flight is None:
                     zone_occupancy[drone.current_zone] += 1
+                else:
+                    if drone.in_flight:
+                        from_zone, to_zone, steps_left = drone.in_flight
+                        zone_occupancy[to_zone] += 1
 
             # Step 2: Land all drones in flight (restricted arrivals)
             for drone in drones:
@@ -216,4 +220,3 @@ class Simulation:
         print(f"Total moves: {total_moves}")
         print(f"Avg moves/turn: {total_moves/turn:.2f}")
         print(f"Avg turns/drone: {turn/len(drones):.2f}")
-        print(f"Total path cost: {total_moves}")
